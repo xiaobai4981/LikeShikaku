@@ -79,7 +79,7 @@ namespace Core
             m_isLoadingScene = true;
 
             // 创建UIManager
-            var uiManagerLoadHandle = Addressables.LoadAssetAsync<GameObject>("Assets/_LikeMathPush/Core/Prefabs/$UIManager.prefab");
+            var uiManagerLoadHandle = Addressables.LoadAssetAsync<GameObject>("Assets/Core/Prefabs/$UIManager.prefab");
             var uiManagerAsset = await uiManagerLoadHandle;
             var uiManagerGO = Instantiate(uiManagerAsset);
             uiManagerGO.name = "$UIManager";
