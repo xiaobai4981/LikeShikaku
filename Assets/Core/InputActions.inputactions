@@ -523,15 +523,6 @@
             "id": "3e2fbd18-f4d0-4a1b-98a7-c66f54869a1b",
             "actions": [
                 {
-                    "name": "KeyBoardMove",
-                    "type": "Value",
-                    "id": "f5a326de-ebc4-45ff-b3a1-e419cf86ae6c",
-                    "expectedControlType": "Vector2",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": true
-                },
-                {
                     "name": "TouchPress",
                     "type": "Button",
                     "id": "16808135-7de6-40c0-8b2a-c6b57f14ac3e",
@@ -551,61 +542,6 @@
                 }
             ],
             "bindings": [
-                {
-                    "name": "2D Vector",
-                    "id": "4af566dc-5fa1-4ffc-8224-a89bde68f338",
-                    "path": "2DVector",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "KeyBoardMove",
-                    "isComposite": true,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "up",
-                    "id": "1d14b710-7175-4b9e-925c-17c08c54adaf",
-                    "path": "<Keyboard>/#(W)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "KeyBoardMove",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "down",
-                    "id": "52fd51ce-0e6b-411b-985f-c370fed02bda",
-                    "path": "<Keyboard>/#(S)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "KeyBoardMove",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "left",
-                    "id": "d417d293-41b0-4175-b99d-60839f1a5d96",
-                    "path": "<Keyboard>/#(A)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "KeyBoardMove",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
-                {
-                    "name": "right",
-                    "id": "aa728c65-e323-4168-8ef5-9dcea9275017",
-                    "path": "<Keyboard>/#(D)",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "KeyBoardMove",
-                    "isComposite": false,
-                    "isPartOfComposite": true
-                },
                 {
                     "name": "",
                     "id": "3709a9ca-c8bd-482a-bb0c-5aa38a4184ca",
