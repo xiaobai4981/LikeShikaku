@@ -612,6 +612,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 65bd35d915baa8f4781793656e947a40, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  m_audioMixer:
+    m_AssetGUID: aeebf2468cc15e34b9077555bb8082fc
+    m_SubObjectName: 
+    m_SubObjectType: 
+    m_EditorAssetChanged: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

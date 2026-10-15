@@ -17,8 +17,18 @@ MonoBehaviour:
     m_SerializedData: []
   m_GUID: 96add1a5281986d48b82c59273d775b2
   m_SerializeEntries:
-  - m_GUID: cbd851d22feba2d44ac70cbb15364bb8
-    m_Address: Assets/_LikeShikaku/Content/MainScene
+  - m_GUID: 2d55909edb7d832459fad3357cfbb89d
+    m_Address: Assets/_LikeShikaku/Content/MainScene/BattlePart/Config/BattleSettings.asset
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: ac41ba625a2a01c41921e120c9f62bbc
+    m_Address: Assets/_LikeShikaku/Content/MainScene/MainScene.unity
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  - m_GUID: f1ba6f7d31a28ff44bf4b746f99cf240
+    m_Address: Assets/_LikeShikaku/Content/MainScene/BattlePart/Prefabs
     m_ReadOnly: 0
     m_SerializedLabels: []
     FlaggedDuringContentUpdateRestriction: 0

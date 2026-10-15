@@ -2,17 +2,26 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class ShikakuCell : MonoBehaviour
+namespace MainScene.BattlePart.Shikaku
 {
-    // Start is called before the first frame update
-    void Start()
+    // TODO 单个方块表现管理
+    [RequireComponent(typeof(SpriteRenderer))]
+    [RequireComponent(typeof(BoxCollider2D))]
+    public class ShikakuCell : MonoBehaviour
     {
-        
-    }
+        // 标记当前方块状态
+        public E_ShikakuCellStatus NowStatus {  get; private set; }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        public void ChangeStatus(E_ShikakuCellStatus cellStatus)
+        {
+            NowStatus = cellStatus;
+            SetStatus(cellStatus);
+        }
+
+        // TODO 改变状态，附带部分表现
+        private void SetStatus(E_ShikakuCellStatus cellStatus)
+        {
+
+        }
     }
 }

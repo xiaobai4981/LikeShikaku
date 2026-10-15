@@ -1,0 +1,4 @@
+namespace MainScene.BattlePart
+{
+
+}
