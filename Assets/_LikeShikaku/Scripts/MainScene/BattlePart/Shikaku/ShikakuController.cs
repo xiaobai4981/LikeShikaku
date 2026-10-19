@@ -7,8 +7,13 @@ namespace MainScene.BattlePart.Shikaku
 {
     public class ShikakuController : MonoBehaviour
     {
-        [SerializeField] private Camera gameplayCamera;
         [SerializeField] private Transform m_mapRoot;
+
+        [Header("颜色")]
+        public Color normalColor = Color.white;
+        public Color previewColor = Color.cyan;
+        public Color successColor = Color.green;
+        public Color errorColor = Color.red;
 
         private MainSceneGameMode m_gameMode;
         private float m_blockSpacing;
@@ -47,14 +52,22 @@ namespace MainScene.BattlePart.Shikaku
                     var pos = new Vector3
                         (xPadding + j * m_blockSpacing,
                          yPadding - i * m_blockSpacing, 0);
-
                     var normalBlock = PoolManager.Instance.GetGameObject
                         (normalBlockPrefab, Vector3.zero, Quaternion.identity);
+                    var cell = normalBlock.GetComponent<ShikakuCell>();
+
                     normalBlock.transform.SetParent(m_mapRoot);
                     normalBlock.transform.position = pos;
-                    m_shikakuCells.Add(normalBlock.GetComponent<ShikakuCell>());
+                    cell.row = i;
+                    cell.col = j;
+                    m_shikakuCells.Add(cell);
                 }
             }
+        }
+
+        public void Sync(ShikakuModel model)
+        {
+
         }
 
         public void ClearMap()

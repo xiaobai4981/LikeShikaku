@@ -7,5 +7,10 @@ namespace MainScene.BattlePart.Shikaku
     public class ShikakuSimulation
     {
         
+        public void Tick()
+        {
+
+        }
+
     }
 }

@@ -12,5 +12,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f691ac225f36f9143b52be1696dd98c3, type: 3}
   m_Name: TestLevelConfig
   m_EditorClassIdentifier: 
-  determinant: {x: 8, y: 8}
+  determinant: {x: 12, y: 8}
   cellDatas: []

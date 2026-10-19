@@ -11,6 +11,8 @@ namespace MainScene.BattlePart.Shikaku
     {
         // 标记当前方块状态
         public E_ShikakuCellStatus NowStatus {  get; private set; }
+        public int row;
+        public int col;
 
         public void ChangeStatus(E_ShikakuCellStatus cellStatus)
         {

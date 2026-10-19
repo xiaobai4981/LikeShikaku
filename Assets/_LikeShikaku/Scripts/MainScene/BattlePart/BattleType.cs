@@ -1,5 +1,14 @@
 namespace MainScene.BattlePart
 {
+    public enum E_BattleStatus
+    {
+        Home = 0,
+        Loading = 1,
+        InBattle = 2,
+        InMenu = 3,
+        Over = 4,
+    }
+
     // TODO 方块的类型
     public enum E_ShikakuCellType
     {
