@@ -16,7 +16,12 @@ MonoBehaviour:
   m_Data:
     m_SerializedData: []
   m_GUID: 25fd2481ebc8b4e4c85be47480f233b7
-  m_SerializeEntries: []
+  m_SerializeEntries:
+  - m_GUID: ef5b2ba80c1d0014989ee1c5f510b70d
+    m_Address: Assets/_LikeShikaku/Content/Common/Atlas/AtlasNumber.spriteatlasv2
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
   m_ReadOnly: 0
   m_Settings: {fileID: 11400000, guid: 445b145d4f93c5c41b3af476052c71b7, type: 2}
   m_SchemaSet:

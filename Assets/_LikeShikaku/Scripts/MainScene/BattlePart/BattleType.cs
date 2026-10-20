@@ -19,9 +19,19 @@ namespace MainScene.BattlePart
     // 方块状态
     public enum E_ShikakuCellStatus
     {
-        UnSettled = 0,  // 未被框选
-        Covering = 1,   // 箭头掠过
-        Setting = 2,    // 正在被框选
-        Settled = 3,    // 已被框选完毕
+        Normal = 0,
+        Preview = 1,
+        Success = 2,
+        Error = 3,
+    }
+
+    // 操作结果
+    public enum E_ShikakuSelectResult
+    {
+        None = 0,
+        Success = 1,
+        NotSquare = 2,
+        Overlap = 3,
+        RegionCleared = 4,
     }
 }

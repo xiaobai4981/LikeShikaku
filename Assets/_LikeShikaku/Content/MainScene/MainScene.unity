@@ -166,8 +166,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 41ad93688caa529458d09892ebc9519e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameplayCamera: {fileID: 663591237}
   m_mapRoot: {fileID: 1355245891}
+  m_camera: {fileID: 663591237}
+  m_cellLayer:
+    serializedVersion: 2
+    m_Bits: 1
+  m_tipText: {fileID: 0}
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  previewColor: {r: 0.038701296, g: 1, b: 0, a: 1}
+  successColor: {r: 1, g: 0.9527582, b: 0, a: 1}
+  errorColor: {r: 1, g: 0, b: 0, a: 1}
 --- !u!1 &663591235
 GameObject:
   m_ObjectHideFlags: 0

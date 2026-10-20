@@ -36,7 +36,9 @@ namespace MainScene
             await UniTask.Yield(Application.exitCancellationToken);
 
             // TODO 如果是第一次，则直接进入第一关，
-            m_shikakuController.Init(this, m_testLevelConfig);  // TODO 这里测试用，后面删掉
+            m_battleManager.Init(this, m_testLevelConfig, m_shikakuController);  // TODO 这里测试用，后面删掉
+            m_battleManager.EnterGameplay();
+            m_battleManager.battleStatus = BattlePart.E_BattleStatus.InBattle;
 
             // TODO 如果不是，则打开home面板
             // HomePart.UI.UIHome.ID.QueueOpen();
@@ -46,7 +48,7 @@ namespace MainScene
 
         public override void Tick()
         {
-
+            m_battleManager?.Tick();
         }
 
         public override void Cleanup()

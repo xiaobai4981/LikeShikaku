@@ -91,7 +91,7 @@ namespace MainScene.BattlePart.Shikaku
             if (!cell.transform.IsChildOf(m_mapRoot))
                 return false;
 
-            cellPosition = new Vector2Int(cell.row, cell.col);
+            cellPosition = new Vector2Int(cell.Row, cell.Col);
 
             return true;
         }
