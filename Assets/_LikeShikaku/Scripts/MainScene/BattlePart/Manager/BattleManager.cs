@@ -37,8 +37,16 @@ namespace MainScene.BattlePart.Manager
         private ShikakuController m_shikakuController;
 
         //  初始化
-        public void Init(MainSceneGameMode gameMode, LevelConfig levelConfig, ShikakuController controller)
+        public void Init(MainSceneGameMode gameMode)
         {
+            m_gameMode = gameMode;
+            
+        }
+
+        public async UniTask NormalGameStart(
+            LevelConfig levelConfig, ShikakuController controller, CancellationToken ct)
+        {
+            battleStatus = E_BattleStatus.Loading;
             Clear();
 
             int rowCount = levelConfig.determinant.x;
@@ -56,7 +64,7 @@ namespace MainScene.BattlePart.Manager
 
             // 3. 表现。
             m_shikakuController = controller;
-            m_shikakuController.Init(gameMode, levelConfig);
+            m_shikakuController.Init(m_gameMode, levelConfig);
 
             // 4. 坐标适配。
             m_shikakuInputTransform = new ShikakuInputTransform(
@@ -68,8 +76,8 @@ namespace MainScene.BattlePart.Manager
             m_battleInputManager = new BattleInputManager();
             m_battleInputManager.Init();
 
-            // 等待上层正式进入游戏。
-            m_battleInputManager.OpenMenu();
+            m_battleInputManager.EnterGameplay();
+            battleStatus = E_BattleStatus.InBattle;
 
             SyncPresentation();
         }
