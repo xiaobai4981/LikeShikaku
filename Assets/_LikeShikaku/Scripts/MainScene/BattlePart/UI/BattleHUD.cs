@@ -20,6 +20,7 @@ namespace MainScene.BattlePart.UI
         private Text m_title;
         private Text m_status;
         private Text m_formation;
+        private readonly Text[] m_armyLegend = new Text[4];
         private Text m_lesson;
         private Text m_message;
         private Button m_undo;
@@ -78,6 +79,15 @@ namespace MainScene.BattlePart.UI
             m_title = Label(content, "八阵图", 27);
             m_status = Label(content, "", 23);
             m_formation = Label(content, "", 22);
+            var legendRow = Rect("ArmyLegend", content);
+            Height(legendRow.gameObject, 28);
+            var legendLayout = legendRow.gameObject.AddComponent<HorizontalLayoutGroup>();
+            legendLayout.childControlWidth = legendLayout.childControlHeight = true;
+            legendLayout.childForceExpandWidth = true;
+            for (int i = 0; i < m_armyLegend.Length; i++)
+            {
+                m_armyLegend[i] = Label(legendRow, ShikakuNames.Unit((E_ArmyType)(i + 1)) + "兵", 21);
+            }
             m_lesson = Label(content, "", 23);
             m_message = Label(content, "", 23);
             var row = Rect("Actions", panel.transform);
@@ -170,6 +180,10 @@ namespace MainScene.BattlePart.UI
 
             var model = m_mode.BattleManager.ShikakuModel;
             m_title.text = model.Level.title;
+            for (int i = 0; i < m_armyLegend.Length; i++)
+            {
+                m_armyLegend[i].color = m_mode.BattleSettings.UnitColor((E_ArmyType)(i + 1));
+            }
             m_formation.text = ShikakuNames.FormationIdea(model.Level.formation) + "\n" + ShikakuRules.FormationProgress(model.Level, model.Regions);
             m_status.text = $"部署 {model.CoveredArea}/{model.Level.AvailableArea} 格 · 将令 {model.Regions.Count}/{model.Level.clues.Count}" + (model.Level.maximumErrors > 0 ? $" · 容错 {Math.Max(0, model.Level.maximumErrors - model.Errors)}/{model.Level.maximumErrors}" : " · 不限错");
             m_lesson.gameObject.SetActive(model.InLesson);

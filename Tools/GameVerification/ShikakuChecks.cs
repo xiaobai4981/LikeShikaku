@@ -136,7 +136,56 @@ namespace MainScene.BattlePart.Shikaku.Tests
                 }
             }
             Check(themes.Count == 8, "Campaign presents all eight formation themes");
+            CheckLargeBoards();
+            report.Add("Large boards: 10x10, 12x16, 20x20, 32x32, 11x13, narrow boards; solving, full coverage, restore and indexed lookup passed");
             return report;
+        }
+
+        private static void CheckLargeBoards()
+        {
+            foreach (var size in new[] { new GridCell(10, 10), new GridCell(12, 16), new GridCell(20, 20), new GridCell(32, 32), new GridCell(11, 13), new GridCell(1, 12), new GridCell(12, 1), new GridCell(2, 2) })
+            {
+                var level = ShikakuCampaign.CreateLargePractice(size.row, size.col);
+                Check(level.Inspect().Count == 0, $"Large template {size.row}x{size.col} configuration");
+                var solved = ShikakuSolver.Solve(level, null, 1, 50000);
+                Check(!solved.budgetExceeded && solved.solutions.Count == 1, "Large-board hint budget");
+                var session = new ShikakuModel(level);
+                var first = solved.solutions[0][0];
+                var cell = new GridCell(first.top, first.left);
+                Check(session.RegionAt(cell) == -1, "Empty cached lookup");
+                session.Submit(first);
+                Check(session.RegionAt(cell) == 0, "Placed cached lookup");
+                if (session.Status == E_ShikakuPlayStatus.Won)
+                {
+                    Check(solved.solutions[0].Count == 1 && session.CoveredArea == size.row * size.col, "Single-region template completed");
+                    continue;
+                }
+                session.RemoveAt(cell);
+                Check(session.RegionAt(cell) == -1, "Removal invalidates cached lookup");
+                Check(session.Undo() && session.RegionAt(cell) == 0, "Undo rebuilds cached lookup");
+                var restored = new ShikakuModel(level);
+                Check(restored.Restore(session.Capture()) && restored.RegionAt(cell) == 0, "Large-board partial restore");
+                foreach (var rect in solved.solutions[0])
+                {
+                    if (!rect.Equals(first))
+                    {
+                        Check(restored.Submit(rect).IsValid, "Large-board submission");
+                    }
+                }
+
+                Check(restored.Status == E_ShikakuPlayStatus.Won && restored.CoveredArea == size.row * size.col, "Large-board full coverage");
+                for (int row = 0; row < size.row; row++)
+                {
+                    for (int col = 0; col < size.col; col++)
+                    {
+                        int index = restored.RegionAt(new GridCell(row, col));
+                        Check(index >= 0 && restored.Regions[index].Contains(new GridCell(row, col)), "Every cached cell matches its region");
+                    }
+                }
+            }
+
+            var oversized = new ShikakuLevelData { rows = ShikakuLevelData.MaxBoardSize + 1, cols = 1 };
+            Check(oversized.Inspect().Count > 0, "Unsupported board size rejected");
         }
 
         private static void CheckFormationSupport()

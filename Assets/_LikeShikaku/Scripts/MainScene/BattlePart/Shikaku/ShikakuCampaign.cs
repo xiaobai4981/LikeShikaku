@@ -4,6 +4,47 @@ namespace MainScene.BattlePart.Shikaku
 {
     public static class ShikakuCampaign
     {
+        // 大棋盘制作起点，分块布局可继续编辑，不作为正式难度题库。
+        public static ShikakuLevelData CreateLargePractice(int rows, int cols)
+        {
+            if (rows < 1 || cols < 1 || rows > ShikakuLevelData.MaxBoardSize || cols > ShikakuLevelData.MaxBoardSize)
+            {
+                throw new System.ArgumentOutOfRangeException("rows/cols");
+            }
+
+            var level = new ShikakuLevelData
+            {
+                id = $"practice-{rows}x{cols}",
+                title = $"大校场 · {rows}×{cols}",
+                briefing = "大校场操练：一阵一令，覆盖全盘；每支弓阵须与步阵或枪阵共边。",
+                rows = rows,
+                cols = cols,
+                formation = E_FormationTheme.连营,
+                requireArcherSupport = false
+            };
+            var units = new[] { E_ArmyType.Infantry, E_ArmyType.Archer, E_ArmyType.Spearman, E_ArmyType.Cavalry };
+            for (int row = 0; row < rows; row += 2)
+            {
+                for (int col = 0; col < cols; col += 2)
+                {
+                    level.clues.Add(new ArmyOrder
+                    {
+                        cell = new GridCell(row, col),
+                        area = System.Math.Min(2, rows - row) * System.Math.Min(2, cols - col),
+                        unit = units[level.clues.Count % units.Length]
+                    });
+                }
+            }
+
+            level.requireArcherSupport = level.clues.Exists(x => x.unit == E_ArmyType.Archer);
+            if (!level.requireArcherSupport)
+            {
+                level.briefing = "大校场操练：一阵一令，面积相符，覆盖全盘。";
+            }
+
+            return level;
+        }
+
         public static List<ShikakuLevelData> CreateDefault()
         {
             var levels = new List<ShikakuLevelData>();

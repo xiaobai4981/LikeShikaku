@@ -50,5 +50,46 @@
     "editor": "Assets/_LikeShikaku/Scripts/Editor/ShikakuLevelEditor.cs",
     "campaign": "Assets/_LikeShikaku/Resources/Shikaku/LevelDatabase.asset"
   },
-  "revision": "formation-v3"
+  "revision": "formation-v3",
+  "largeBoards": {
+    "status": "passed_offline",
+    "maxRows": 32,
+    "maxColumns": 32,
+    "sizes": [
+      "10x10",
+      "12x16",
+      "20x20",
+      "32x32",
+      "11x13",
+      "1x12",
+      "12x1",
+      "2x2"
+    ],
+    "checks": [
+      "configuration",
+      "solver within hint budget",
+      "full coverage",
+      "partial restore",
+      "remove and undo",
+      "cached cell-to-region lookup"
+    ]
+  },
+  "armyPalette": {
+    "defaults": {
+      "infantry": "blue",
+      "spearman": "green",
+      "archer": "orange",
+      "cavalry": "purple"
+    },
+    "appliedTo": [
+      "order text",
+      "flags",
+      "deployed ground",
+      "army tint",
+      "formation borders",
+      "editor",
+      "HUD legend"
+    ],
+    "visualPlayModeCheck": "not_run"
+  }
 }

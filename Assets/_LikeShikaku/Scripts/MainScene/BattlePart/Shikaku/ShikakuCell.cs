@@ -19,17 +19,23 @@ namespace MainScene.BattlePart.Shikaku
         private TMP_Text m_targetText;
         private Color m_normal;
         private Color m_preview;
+        private Color m_defaultPreview;
         private Color m_success;
         private Color m_error;
         private Vector2 m_size;
         private BattleSettings m_settings;
+        private Color m_deployedColor;
+        private int m_lastRevision = -1;
         public void Init(int row, int col, Color normalColor, Color previewColor, Color successColor, Color errorColor)
         {
             Row = row;
             Col = col;
             m_normal = normalColor;
             m_preview = previewColor;
+            m_defaultPreview = previewColor;
             m_success = successColor;
+            m_deployedColor = successColor;
+            m_lastRevision = -1;
             m_error = errorColor;
             if (!m_original)
             {
@@ -48,6 +54,8 @@ namespace MainScene.BattlePart.Shikaku
 
             m_original.enabled = false;
             m_soldier.enabled = m_flag.enabled = false;
+            m_soldier.color = m_flag.color = Color.white;
+            m_orderText.color = new Color(.1f, .08f, .04f);
             m_orderText.text = m_targetText.text = "";
             NowStatus = E_ShikakuCellStatus.Normal;
             SetStatus(NowStatus);
@@ -79,8 +87,15 @@ namespace MainScene.BattlePart.Shikaku
             }
 
             m_orderText.alignment = TextAlignmentOptions.Center;
-            m_orderText.rectTransform.sizeDelta = new Vector2(m_size.x * .66f, m_size.y * .42f);
-            m_orderText.transform.localPosition = new Vector3(m_size.x * .12f, m_size.y * .26f, -.03f);
+            // 将令占据上方主体空间，统一深色粗体；兵种颜色由旗帜和阵框表达。
+            m_orderText.rectTransform.sizeDelta = new Vector2(m_size.x * .94f, m_size.y * .5f);
+            m_orderText.transform.localPosition = new Vector3(0, m_size.y * .23f, -.03f);
+            m_orderText.fontStyle = FontStyles.Bold;
+            m_orderText.fontSize = 24;
+            m_orderText.fontSizeMin = 6;
+            m_orderText.fontSizeMax = 24;
+            m_orderText.margin = Vector4.zero;
+            m_orderText.color = new Color32(22, 24, 28, 255);
             m_targetText.alignment = TextAlignmentOptions.BottomLeft;
             m_targetText.transform.localPosition = new Vector3(0, -m_size.y * .25f, -.05f);
             m_targetText.color = new Color(1, .8f, .1f);
@@ -94,35 +109,47 @@ namespace MainScene.BattlePart.Shikaku
                 }
 
                 m_orderText.text = unit + " " + clue.area;
+                m_flag.color = m_settings.UnitColor(clue.unit);
                 m_flag.sprite = m_settings.Flag(clue.unit);
                 m_flag.enabled = m_flag.sprite;
-                Fit(m_flag, m_size.x * .23f, m_size.y * .4f);
-                m_flag.transform.localPosition = new Vector3(-m_size.x * .34f, m_size.y * .24f, -.02f);
+                Fit(m_flag, m_size.x * .28f, m_size.y * .45f);
+                m_flag.transform.localPosition = new Vector3(-m_size.x * .32f, -m_size.y * .23f, -.02f);
             }
 
             ChangeStatus(E_ShikakuCellStatus.Normal);
         }
 
-        public void Sync(ShikakuModel model)
+        public void Sync(ShikakuModel model, Color? selectionColor = null)
         {
+            m_preview = selectionColor.HasValue ? Color.Lerp(Color.white, selectionColor.Value, .45f) : m_defaultPreview;
+            if (m_lastRevision != model.Revision)
+            {
+                m_lastRevision = model.Revision;
+                int region = model.RegionAt(new GridCell(Row, Col));
+                Sprite sprite = null;
+                m_deployedColor = m_success;
+                m_soldier.color = Color.white;
+                if (region >= 0)
+                {
+                    var rect = model.Regions[region];
+                    var clue = model.Level.clues.Find(x => rect.Contains(x.cell));
+                    var armyColor = m_settings.UnitColor(clue.unit);
+                    sprite = m_settings.Unit(clue.unit);
+                    m_deployedColor = Color.Lerp(Color.white, armyColor, .38f);
+                    m_soldier.color = Color.Lerp(Color.white, armyColor, .25f);
+                }
+
+                if (m_soldier.sprite != sprite)
+                {
+                    m_soldier.sprite = sprite;
+                    Fit(m_soldier, m_size.x * .62f, m_size.y * .5f);
+                }
+
+                m_soldier.enabled = sprite;
+                m_soldier.transform.localPosition = new Vector3(m_size.x * .1f, -m_size.y * .22f, -.02f);
+            }
+
             ChangeStatus(model.GetCellStatus(Row, Col));
-            int region = model.RegionAt(new GridCell(Row, Col));
-            Sprite sprite = null;
-            if (region >= 0)
-            {
-                var rect = model.Regions[region];
-                var clue = model.Level.clues.Find(x => rect.Contains(x.cell));
-                sprite = m_settings.Unit(clue.unit);
-            }
-
-            if (m_soldier.sprite != sprite)
-            {
-                m_soldier.sprite = sprite;
-                Fit(m_soldier, m_size.x * .66f, m_size.y * .63f);
-            }
-
-            m_soldier.enabled = sprite;
-            m_soldier.transform.localPosition = new Vector3(0, -m_size.y * .12f, -.02f);
             bool teaching = model.InLesson && model.CurrentLesson.hasTarget && model.CurrentLesson.target.Equals(new GridCell(Row, Col));
             m_targetText.text = teaching ? ">" : "";
         }
@@ -146,7 +173,7 @@ namespace MainScene.BattlePart.Shikaku
                     m_tile.color = m_preview;
                     break;
                 case E_ShikakuCellStatus.Success:
-                    m_tile.color = m_success;
+                    m_tile.color = m_deployedColor;
                     break;
                 case E_ShikakuCellStatus.Error:
                     m_tile.color = m_error;

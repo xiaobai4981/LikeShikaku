@@ -28,6 +28,8 @@ namespace MainScene.BattlePart.Shikaku
         private readonly List<ShikakuRect> m_regions = new List<ShikakuRect>();
         private readonly List<ShikakuSnapshot> m_history = new List<ShikakuSnapshot>();
         private readonly IReadOnlyList<ShikakuRect> m_readOnlyRegions;
+        private int[] m_regionByCell;
+        private int m_regionCacheRevision = -1;
         public IReadOnlyList<ShikakuRect> Regions => m_readOnlyRegions;
         public int Errors { get; private set; }
         public int HintsUsed { get; private set; }
@@ -68,7 +70,40 @@ namespace MainScene.BattlePart.Shikaku
 
         public int RegionAt(GridCell cell)
         {
-            return m_regions.FindIndex(x => x.Contains(cell));
+            if (!Level.InBounds(cell))
+            {
+                return -1;
+            }
+
+            // 大棋盘逐帧着色使用格子索引；仅在布局变化时重建。
+            if (m_regionCacheRevision != Revision)
+            {
+                if (m_regionByCell == null)
+                {
+                    m_regionByCell = new int[Level.AvailableArea];
+                }
+
+                for (int i = 0; i < m_regionByCell.Length; i++)
+                {
+                    m_regionByCell[i] = -1;
+                }
+
+                for (int i = 0; i < m_regions.Count; i++)
+                {
+                    var rect = m_regions[i];
+                    for (int row = rect.top; row <= rect.bottom; row++)
+                    {
+                        for (int col = rect.left; col <= rect.right; col++)
+                        {
+                            m_regionByCell[row * Level.cols + col] = i;
+                        }
+                    }
+                }
+
+                m_regionCacheRevision = Revision;
+            }
+
+            return m_regionByCell[cell.row * Level.cols + cell.col];
         }
 
         public ShikakuRuleResult Submit(ShikakuRect rect)

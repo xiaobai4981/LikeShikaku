@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Common.Level;
 using MainScene.BattlePart;
+using MainScene.BattlePart.Configs;
 using MainScene.BattlePart.Shikaku;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -27,6 +28,9 @@ namespace LikeShikaku.Editor
         private GridCell? m_lastPainted;
         private int m_number = 4;
         private E_ArmyType m_army = E_ArmyType.Infantry;
+        private float m_boardCellSize = 48;
+        private int m_newBoardSize = 10;
+        private BattleSettings m_visualSettings;
         private int m_rows = 5;
         private int m_cols = 5;
         private string m_validation;
@@ -48,6 +52,7 @@ namespace LikeShikaku.Editor
         private void OnEnable()
         {
             Undo.undoRedoPerformed += OnUndo;
+            m_visualSettings = AssetDatabase.LoadAssetAtPath<BattleSettings>("Assets/_LikeShikaku/Content/MainScene/BattlePart/Config/BattleSettings.asset");
         }
 
         private void OnDisable()
@@ -88,6 +93,12 @@ namespace LikeShikaku.Editor
             if (GUILayout.Button("新建", EditorStyles.toolbarButton, GUILayout.Width(48)))
             {
                 CreateLevel();
+            }
+
+            m_newBoardSize = EditorGUILayout.IntPopup(m_newBoardSize, new[] { "10×10", "12×12", "16×16", "20×20", "32×32" }, new[] { 10, 12, 16, 20, 32 }, GUILayout.Width(78));
+            if (GUILayout.Button("新建大关卡", EditorStyles.toolbarButton, GUILayout.Width(84)))
+            {
+                CreateLevel(m_newBoardSize);
             }
 
             if (GUILayout.Button("保存", EditorStyles.toolbarButton, GUILayout.Width(48)))
@@ -135,11 +146,20 @@ namespace LikeShikaku.Editor
                 Invalidate();
             }
 
-            m_rows = EditorGUILayout.IntSlider("行数", m_rows, 1, 20);
-            m_cols = EditorGUILayout.IntSlider("列数", m_cols, 1, 20);
+            m_rows = EditorGUILayout.IntSlider("行数", m_rows, 1, ShikakuLevelData.MaxBoardSize);
+            m_cols = EditorGUILayout.IntSlider("列数", m_cols, 1, ShikakuLevelData.MaxBoardSize);
             if (GUILayout.Button("应用尺寸（保留范围内数据）"))
             {
                 ResizeLevel();
+            }
+
+            m_boardCellSize = EditorGUILayout.Slider("画板格子大小", m_boardCellSize, 24, 80);
+            EditorGUILayout.HelpBox("大棋盘可滚动查看。顶部可直接新建 10×10～32×32 可解模板；调整尺寸后需重新配置将令格数。", MessageType.None);
+            foreach (var unit in new[] { E_ArmyType.Infantry, E_ArmyType.Spearman, E_ArmyType.Archer, E_ArmyType.Cavalry })
+            {
+                var legend = new GUIStyle(EditorStyles.boldLabel);
+                legend.normal.textColor = Color.Lerp(UnitColor(unit), Color.black, .2f);
+                EditorGUILayout.LabelField(ShikakuNames.Unit(unit) + "兵", legend);
             }
 
             EditorGUILayout.Space();
@@ -200,15 +220,15 @@ namespace LikeShikaku.Editor
 
         private void DrawBoard()
         {
-            int rows = Mathf.Clamp(m_level.determinant.x, 1, 20);
-            int cols = Mathf.Clamp(m_level.determinant.y, 1, 20);
-            float size = Mathf.Clamp((position.width - 330) / cols, 30, 72);
+            int rows = Mathf.Clamp(m_level.determinant.x, 1, ShikakuLevelData.MaxBoardSize);
+            int cols = Mathf.Clamp(m_level.determinant.y, 1, ShikakuLevelData.MaxBoardSize);
+            float size = m_boardCellSize;
             var area = GUILayoutUtility.GetRect(cols * size + 2, rows * size + 2, GUILayout.ExpandWidth(false));
             var data = m_level.cellDatas ?? Array.Empty<CellData>();
             var style = new GUIStyle(EditorStyles.boldLabel)
             {
                 alignment = TextAnchor.MiddleCenter,
-                fontSize = size >= 50 ? 18 : 12
+                fontSize = Mathf.Clamp(Mathf.RoundToInt(size * .38f), 12, 28)
             };
             style.normal.textColor = Color.black;
             for (int r = 0; r < rows; r++)
@@ -218,13 +238,14 @@ namespace LikeShikaku.Editor
                     var cell = new GridCell(r, c);
                     var rect = new Rect(area.x + c * size, area.y + r * size, size - 2, size - 2);
                     var entry = Array.Find(data, x => x.position.x == r && x.position.y == c);
-                    Color color = new Color(.86f, .79f, .64f);
+                    Color color = entry.number > 0 ? Color.Lerp(Color.white, UnitColor(entry.armyType), .38f) : new Color(.86f, .79f, .64f);
                     if (m_showSolution && m_solution != null)
                     {
                         int index = m_solution.FindIndex(x => x.Contains(cell));
                         if (index >= 0)
                         {
-                            color = Color.HSVToRGB((index * .19f) % 1, .24f, .86f);
+                            var order = Array.Find(data, x => x.number > 0 && m_solution[index].Contains(new GridCell(x.position.x, x.position.y)));
+                            color = Color.Lerp(Color.white, UnitColor(order.armyType), .38f);
                         }
                     }
 
@@ -235,6 +256,12 @@ namespace LikeShikaku.Editor
 
                     EditorGUI.DrawRect(rect, color);
                     string label = entry.number > 0 ? ShikakuNames.Unit(entry.armyType) + " " + entry.number : "";
+                    style.normal.textColor = new Color32(22, 24, 28, 255);
+                    style.fontSize = Mathf.Clamp(Mathf.RoundToInt(size * .38f), 12, 28);
+                    while (style.fontSize > 9 && style.CalcSize(new GUIContent(label)).x > rect.width - 4)
+                    {
+                        style.fontSize--;
+                    }
                     GUI.Label(rect, label, style);
                 }
             }
@@ -338,7 +365,12 @@ namespace LikeShikaku.Editor
             }
         }
 
-        private void CreateLevel()
+        private Color UnitColor(E_ArmyType unit)
+        {
+            return m_visualSettings ? m_visualSettings.UnitColor(unit) : BattleSettings.DefaultUnitColor(unit);
+        }
+
+        private void CreateLevel(int boardSize = 0)
         {
             string path = EditorUtility.SaveFilePanelInProject("新建关卡", "custom-level", "asset", "保存新的 LevelConfig");
             if (string.IsNullOrEmpty(path))
@@ -347,9 +379,9 @@ namespace LikeShikaku.Editor
             }
 
             var level = CreateInstance<LevelConfig>();
-            level.SetData(ShikakuCampaign.CreateDefault()[4]);
+            level.SetData(boardSize > 0 ? ShikakuCampaign.CreateLargePractice(boardSize, boardSize) : ShikakuCampaign.CreateDefault()[4]);
             level.levelId = "custom-" + Guid.NewGuid().ToString("N").Substring(0, 12);
-            level.title = "新军阵";
+            level.title = boardSize > 0 ? $"大校场 · {boardSize}×{boardSize}" : "新军阵";
             AssetDatabase.CreateAsset(level, path);
             SetLevel(level);
             Selection.activeObject = level;

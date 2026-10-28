@@ -152,6 +152,7 @@ namespace MainScene.BattlePart.Shikaku
     [Serializable]
     public class ShikakuLevelData
     {
+        public const int MaxBoardSize = 32;
         public string id;
         public string title;
         public string briefing;
@@ -178,9 +179,9 @@ namespace MainScene.BattlePart.Shikaku
         public List<string> Inspect()
         {
             var errors = new List<string>();
-            if (rows < 1 || cols < 1 || rows > 20 || cols > 20)
+            if (rows < 1 || cols < 1 || rows > MaxBoardSize || cols > MaxBoardSize)
             {
-                errors.Add("棋盘行列必须在 1～20 之间。");
+                errors.Add($"棋盘行列必须在 1～{MaxBoardSize} 之间。");
             }
 
             if (maximumErrors < 0)

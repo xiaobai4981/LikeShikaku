@@ -28,6 +28,7 @@ namespace MainScene.BattlePart.Shikaku
         private float m_blockSpacing;
         private ShikakuLevelData m_level;
         private int m_drawnRevision = -1;
+        private ShikakuRect? m_drawnSelection;
         private int m_lastResultVersion = -1;
         private Rect m_oldRect;
         private float m_oldSize;
@@ -149,15 +150,39 @@ namespace MainScene.BattlePart.Shikaku
                 FitCamera();
             }
 
-            foreach (var cell in m_shikakuCells)
+            ShikakuRect? selection = model.IsSelecting
+                ? ShikakuRect.Between(new GridCell(model.StartCell.x, model.StartCell.y), new GridCell(model.EndCell.x, model.EndCell.y))
+                : model.HintRectangle;
+            Color? selectionColor = null;
+            if (selection.HasValue)
             {
-                cell.Sync(model);
+                ArmyOrder selectedOrder = null;
+                int orders = 0;
+                foreach (var order in m_level.clues)
+                {
+                    if (selection.Value.Contains(order.cell))
+                    {
+                        selectedOrder = order;
+                        orders++;
+                    }
+                }
+
+                if (orders == 1)
+                {
+                    selectionColor = m_gameMode.BattleSettings.UnitColor(selectedOrder.unit);
+                }
             }
 
-            if (m_drawnRevision != model.Revision)
+            foreach (var cell in m_shikakuCells)
+            {
+                cell.Sync(model, selectionColor);
+            }
+
+            if (m_drawnRevision != model.Revision || !m_drawnSelection.Equals(selection))
             {
                 m_drawnRevision = model.Revision;
-                DrawBorders(model);
+                m_drawnSelection = selection;
+                DrawBorders(model, selection, selectionColor ?? previewColor);
             }
 
             if (m_tipText)
@@ -222,14 +247,14 @@ namespace MainScene.BattlePart.Shikaku
             m_camera.transform.position = new Vector3(bounds.center.x, bounds.center.y - (1 - height) * m_camera.orthographicSize, p.z);
         }
 
-        private void DrawBorders(ShikakuModel model)
+        private void DrawBorders(ShikakuModel model, ShikakuRect? selection, Color selectionColor)
         {
             int used = 0;
             foreach (var rect in model.Regions)
             {
-                var topLeft = CellLocal(rect.top, rect.left) + new Vector3(-m_blockSpacing * .49f, m_blockSpacing * .49f, -.1f);
-                var bottomRight = CellLocal(rect.bottom, rect.right) + new Vector3(m_blockSpacing * .49f, -m_blockSpacing * .49f, -.1f);
-                DrawLine(ref used, new[] { topLeft, new Vector3(bottomRight.x, topLeft.y, -.1f), bottomRight, new Vector3(topLeft.x, bottomRight.y, -.1f), topLeft }, .045f, new Color(.2f, .17f, .12f));
+                var order = m_level.clues.Find(x => rect.Contains(x.cell));
+                // 边框略向军阵内部收，避免相邻军阵的不同颜色互相覆盖。
+                DrawRectBorder(ref used, rect, .46f, .045f, m_gameMode.BattleSettings.UnitColor(order.unit));
             }
 
 
@@ -258,10 +283,22 @@ namespace MainScene.BattlePart.Shikaku
                 }
             }
 
+            if (selection.HasValue)
+            {
+                DrawRectBorder(ref used, selection.Value, .49f, .065f, selectionColor);
+            }
+
             for (int i = used; i < m_lines.Count; i++)
             {
                 m_lines[i].gameObject.SetActive(false);
             }
+        }
+
+        private void DrawRectBorder(ref int used, ShikakuRect rect, float extent, float width, Color color)
+        {
+            var topLeft = CellLocal(rect.top, rect.left) + new Vector3(-m_blockSpacing * extent, m_blockSpacing * extent, -.1f);
+            var bottomRight = CellLocal(rect.bottom, rect.right) + new Vector3(m_blockSpacing * extent, -m_blockSpacing * extent, -.1f);
+            DrawLine(ref used, new[] { topLeft, new Vector3(bottomRight.x, topLeft.y, -.1f), bottomRight, new Vector3(topLeft.x, bottomRight.y, -.1f), topLeft }, width, color);
         }
 
         private void DrawLine(ref int used, Vector3[] points, float width, Color color)
@@ -326,6 +363,7 @@ namespace MainScene.BattlePart.Shikaku
 
             m_lines.Clear();
             m_drawnRevision = m_lastResultVersion = -1;
+            m_drawnSelection = null;
             if (m_lineMaterial)
             {
                 Destroy(m_lineMaterial);
