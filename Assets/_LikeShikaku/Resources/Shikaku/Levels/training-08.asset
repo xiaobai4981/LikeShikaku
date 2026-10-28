@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f691ac225f36f9143b52be1696dd98c3, type: 3}
+  m_Name: training-08
+  m_EditorClassIdentifier: 
+  determinant: {x: 6, y: 8}
+  cellDatas:
+  - position: {x: 2, y: 0}
+    cellType: 0
+    number: 12
+    armyType: 1
+  - position: {x: 1, y: 3}
+    cellType: 0
+    number: 8
+    armyType: 3
+  - position: {x: 2, y: 6}
+    cellType: 0
+    number: 12
+    armyType: 4
+  - position: {x: 3, y: 5}
+    cellType: 0
+    number: 8
+    armyType: 1
+  - position: {x: 4, y: 2}
+    cellType: 0
+    number: 8
+    armyType: 2
+  levelId: "training-08"
+  title: "\u7b2c 8 \u5173 \u00b7 \u4e24\u7ffc\u9635"
+  briefing: "\u4e24\u7ffc\u5c55\u5f00\uff0c\u4e2d\u8def\u7b56\u5e94\uff1b\u6bd4\u8f83\u5de6\u53f3\u519b\u9635\u7684\u63a5\u5e94\u7a7a\u95f4\u3002 \u5f13\u9635\u987b\u4e0e\u6b65\u9635\u6216\u67aa\u9635\u5171\u8fb9\uff1b\u4efb\u9009\u62a4\u536b\uff0c\u4e0d\u9884\u8bbe\u519b\u9635\u8fb9\u754c\u3002"
+  formation: 2
+  requireArcherSupport: 1
+  maximumErrors: 0
+  lessons: []

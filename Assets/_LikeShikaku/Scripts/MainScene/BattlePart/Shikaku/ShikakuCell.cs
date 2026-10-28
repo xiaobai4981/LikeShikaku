@@ -1,76 +1,218 @@
-using System.Collections;
-using System.Collections.Generic;
+using MainScene.BattlePart.Configs;
+using TMPro;
 using UnityEngine;
 
 namespace MainScene.BattlePart.Shikaku
 {
-    // TODO 单个方块表现管理
-    [RequireComponent(typeof(SpriteRenderer))]
-    [RequireComponent(typeof(BoxCollider2D))]
+    [RequireComponent(typeof(SpriteRenderer)), RequireComponent(typeof(BoxCollider2D))]
     public class ShikakuCell : MonoBehaviour
     {
         public int Row { get; private set; }
         public int Col { get; private set; }
-
         public E_ShikakuCellStatus NowStatus { get; private set; }
 
-        private SpriteRenderer m_spriteRenderer;
-
-        private Color m_normalColor;
-        private Color m_previewColor;
-        private Color m_successColor;
-        private Color m_errorColor;
-
-        public void Init(int row, int col,
-            Color normalColor, Color previewColor,
-            Color successColor, Color errorColor)
+        private SpriteRenderer m_original;
+        private SpriteRenderer m_tile;
+        private SpriteRenderer m_soldier;
+        private SpriteRenderer m_flag;
+        private TMP_Text m_orderText;
+        private TMP_Text m_targetText;
+        private Color m_normal;
+        private Color m_preview;
+        private Color m_success;
+        private Color m_error;
+        private Vector2 m_size;
+        private BattleSettings m_settings;
+        public void Init(int row, int col, Color normalColor, Color previewColor, Color successColor, Color errorColor)
         {
             Row = row;
             Col = col;
-
-            if (m_spriteRenderer == null)
+            m_normal = normalColor;
+            m_preview = previewColor;
+            m_success = successColor;
+            m_error = errorColor;
+            if (!m_original)
             {
-                m_spriteRenderer = GetComponent<SpriteRenderer>();
+                m_original = GetComponent<SpriteRenderer>();
             }
 
-            m_normalColor = normalColor;
-            m_previewColor = previewColor;
-            m_successColor = successColor;
-            m_errorColor = errorColor;
+            if (!m_tile)
+            {
+                m_tile = MakeSprite("Ground", 0);
+                m_tile.sprite = m_original.sprite;
+                m_soldier = MakeSprite("Army", 3);
+                m_flag = MakeSprite("OrderFlag", 4);
+                m_orderText = MakeText("Order", 10);
+                m_targetText = MakeText("Teaching", 13);
+            }
 
-            // 对象池复用时强制刷新一次颜色。
+            m_original.enabled = false;
+            m_soldier.enabled = m_flag.enabled = false;
+            m_orderText.text = m_targetText.text = "";
             NowStatus = E_ShikakuCellStatus.Normal;
             SetStatus(NowStatus);
         }
 
-        public void ChangeStatus(E_ShikakuCellStatus cellStatus)
+        public void Configure(ShikakuLevelData data, BattleSettings battleSettings, Vector2 localSize)
         {
-            if (NowStatus == cellStatus)
-                return;
+            m_settings = battleSettings;
+            m_size = localSize;
+            m_tile.sprite = m_settings.groundSprite ? m_settings.groundSprite : m_original.sprite;
+            Fit(m_tile, m_size.x, m_size.y);
+            var collider = GetComponent<BoxCollider2D>();
+            collider.offset = Vector2.zero;
+            collider.size = m_size;
+            foreach (var text in new[]
+            {
+                m_orderText,
+                m_targetText
+            }
 
-            NowStatus = cellStatus;
-            SetStatus(cellStatus);
+            )
+            {
+                if (m_settings.boardFont)
+                {
+                    text.font = m_settings.boardFont;
+                }
+
+                text.rectTransform.sizeDelta = new Vector2(m_size.x * .92f, m_size.y * .42f);
+            }
+
+            m_orderText.alignment = TextAlignmentOptions.Center;
+            m_orderText.rectTransform.sizeDelta = new Vector2(m_size.x * .66f, m_size.y * .42f);
+            m_orderText.transform.localPosition = new Vector3(m_size.x * .12f, m_size.y * .26f, -.03f);
+            m_targetText.alignment = TextAlignmentOptions.BottomLeft;
+            m_targetText.transform.localPosition = new Vector3(0, -m_size.y * .25f, -.05f);
+            m_targetText.color = new Color(1, .8f, .1f);
+            var clue = data.ClueAt(new GridCell(Row, Col));
+            if (clue != null)
+            {
+                string unit = ShikakuNames.Unit(clue.unit);
+                if (!m_orderText.font || !m_orderText.font.HasCharacter(unit[0]))
+                {
+                    unit = Code(clue.unit);
+                }
+
+                m_orderText.text = unit + " " + clue.area;
+                m_flag.sprite = m_settings.Flag(clue.unit);
+                m_flag.enabled = m_flag.sprite;
+                Fit(m_flag, m_size.x * .23f, m_size.y * .4f);
+                m_flag.transform.localPosition = new Vector3(-m_size.x * .34f, m_size.y * .24f, -.02f);
+            }
+
+            ChangeStatus(E_ShikakuCellStatus.Normal);
         }
 
-        private void SetStatus(E_ShikakuCellStatus cellStatus)
+        public void Sync(ShikakuModel model)
         {
-            switch (cellStatus)
+            ChangeStatus(model.GetCellStatus(Row, Col));
+            int region = model.RegionAt(new GridCell(Row, Col));
+            Sprite sprite = null;
+            if (region >= 0)
             {
-                case E_ShikakuCellStatus.Normal:
-                    m_spriteRenderer.color = m_normalColor;
-                    break;
+                var rect = model.Regions[region];
+                var clue = model.Level.clues.Find(x => rect.Contains(x.cell));
+                sprite = m_settings.Unit(clue.unit);
+            }
 
+            if (m_soldier.sprite != sprite)
+            {
+                m_soldier.sprite = sprite;
+                Fit(m_soldier, m_size.x * .66f, m_size.y * .63f);
+            }
+
+            m_soldier.enabled = sprite;
+            m_soldier.transform.localPosition = new Vector3(0, -m_size.y * .12f, -.02f);
+            bool teaching = model.InLesson && model.CurrentLesson.hasTarget && model.CurrentLesson.target.Equals(new GridCell(Row, Col));
+            m_targetText.text = teaching ? ">" : "";
+        }
+
+        public void ChangeStatus(E_ShikakuCellStatus status)
+        {
+            NowStatus = status;
+            SetStatus(status);
+        }
+
+        private void SetStatus(E_ShikakuCellStatus status)
+        {
+            if (!m_tile)
+            {
+                return;
+            }
+
+            switch (status)
+            {
                 case E_ShikakuCellStatus.Preview:
-                    m_spriteRenderer.color = m_previewColor;
+                    m_tile.color = m_preview;
                     break;
-
                 case E_ShikakuCellStatus.Success:
-                    m_spriteRenderer.color = m_successColor;
+                    m_tile.color = m_success;
                     break;
-
                 case E_ShikakuCellStatus.Error:
-                    m_spriteRenderer.color = m_errorColor;
+                    m_tile.color = m_error;
                     break;
+                case E_ShikakuCellStatus.Hint:
+                    m_tile.color = new Color(.65f, .8f, 1);
+                    break;
+                default:
+                    m_tile.color = m_normal;
+                    break;
+            }
+        }
+
+        private SpriteRenderer MakeSprite(string name, int order)
+        {
+            var obj = new GameObject(name);
+            obj.transform.SetParent(transform, false);
+            var renderer = obj.AddComponent<SpriteRenderer>();
+            renderer.sortingLayerID = m_original.sortingLayerID;
+            renderer.sortingOrder = m_original.sortingOrder + order;
+            renderer.sharedMaterial = m_original.sharedMaterial;
+            return renderer;
+        }
+
+        private TMP_Text MakeText(string name, int order)
+        {
+            var obj = new GameObject(name);
+            obj.transform.SetParent(transform, false);
+            var text = obj.AddComponent<TextMeshPro>();
+            text.fontSize = 5;
+            text.enableAutoSizing = true;
+            text.fontSizeMin = .5f;
+            text.fontSizeMax = 8;
+            text.color = new Color(.1f, .08f, .04f);
+            text.richText = false;
+            text.enableWordWrapping = false;
+            var renderer = obj.GetComponent<MeshRenderer>();
+            renderer.sortingLayerID = m_original.sortingLayerID;
+            renderer.sortingOrder = m_original.sortingOrder + order;
+            return text;
+        }
+
+        private static void Fit(SpriteRenderer renderer, float width, float height)
+        {
+            if (!renderer || !renderer.sprite)
+            {
+                return;
+            }
+
+            var b = renderer.sprite.bounds.size;
+            float scale = Mathf.Min(width / Mathf.Max(.001f, b.x), height / Mathf.Max(.001f, b.y));
+            renderer.transform.localScale = Vector3.one * scale;
+        }
+
+        private static string Code(E_ArmyType type)
+        {
+            switch (type)
+            {
+                case E_ArmyType.Infantry:
+                    return "I";
+                case E_ArmyType.Spearman:
+                    return "S";
+                case E_ArmyType.Archer:
+                    return "A";
+                default:
+                    return "C";
             }
         }
     }

@@ -1,0 +1,54 @@
+{
+  "date": "2026-10-28",
+  "unity": "2022.3.62f3",
+  "ruleRegression": "passed: all 20 default and packaged levels; cooperation geometry, solver, restore, undo, completion",
+  "editorApiCompilation": {
+    "success": true,
+    "errors": 0,
+    "existingFrameworkWarnings": 6
+  },
+  "playerConditionalCompilation": {
+    "success": true,
+    "errors": 0,
+    "existingFrameworkWarnings": 6
+  },
+  "playMode": {
+    "status": "not_run_for_formation_v3",
+    "previousReport": {
+      "success": true,
+      "completedLevels": 20,
+      "message": "已从 BootScene 启动并完成 20 关，检查撤销、暂停、界面和结算。",
+      "errors": ""
+    }
+  },
+  "singleLevelPlaytest": {
+    "status": "not_run_for_formation_v3",
+    "previousReport": {
+      "success": true,
+      "completedLevels": 1,
+      "message": "已从 BootScene 启动并完成 1 关，检查撤销、暂停、界面和结算。",
+      "errors": ""
+    }
+  },
+  "editorChecks": [
+    "将令绘制",
+    "擦除",
+    "Undo",
+    "关卡资源保存读取（含阵法主题与护卫开关；场景冒烟待运行）"
+  ],
+  "inputChecks": [
+    "真实相机屏幕坐标转换与 Collider2D 命中",
+    "棋盘外松开取消",
+    "撤回手势不重复提交"
+  ],
+  "limitations": [
+    "未执行发布包构建或真机运行",
+    "多指归属代码已编译，未进行物理多点触屏测试"
+  ],
+  "sourceLocations": {
+    "guide": "GAME_GUIDE.md",
+    "editor": "Assets/_LikeShikaku/Scripts/Editor/ShikakuLevelEditor.cs",
+    "campaign": "Assets/_LikeShikaku/Resources/Shikaku/LevelDatabase.asset"
+  },
+  "revision": "formation-v3"
+}

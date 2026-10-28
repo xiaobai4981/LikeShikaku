@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework><LangVersion>9.0</LangVersion>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems><ImplicitUsings>disable</ImplicitUsings><Nullable>disable</Nullable><NuGetAudit>false</NuGetAudit>
+    <DefineConstants Condition="'$(PlayerCheck)' != 'true'">UNITY_EDITOR;UNITY_2022_3;UNITY_2022_3_OR_NEWER</DefineConstants>
+    <DefineConstants Condition="'$(PlayerCheck)' == 'true'">UNITY_WEBGL;UNITY_2022_3;UNITY_2022_3_OR_NEWER</DefineConstants>
+    <UnityProjectRoot Condition="'$(UnityProjectRoot)' == ''">D:/UnityProject/LikeShikaku</UnityProjectRoot>
+    <UnityEditorRoot Condition="'$(UnityEditorRoot)' == ''">D:/UnityEditor/2022.3.62f3/Editor</UnityEditorRoot>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../Assets/_LikeShikaku/Scripts/**/*.cs" />
+    <Compile Remove="../../Assets/_LikeShikaku/Scripts/Editor/**/*.cs" Condition="'$(PlayerCheck)' == 'true'" />
+    <Compile Include="$(UnityProjectRoot)/Assets/Core/Scripts/**/*.cs" />
+    <Reference Include="$(UnityEditorRoot)/Data/Managed/UnityEngine/*.dll" />
+    <Reference Include="$(UnityEditorRoot)/Data/Managed/UnityEditor/*.dll" />
+    <Reference Include="$(UnityProjectRoot)/Library/ScriptAssemblies/*.dll"
+      Exclude="$(UnityProjectRoot)/Library/ScriptAssemblies/Assembly-CSharp.dll;$(UnityProjectRoot)/Library/ScriptAssemblies/Assembly-CSharp-Editor.dll;$(UnityProjectRoot)/Library/ScriptAssemblies/KingdomFormation*.dll" />
+    <Reference Include="$(UnityProjectRoot)/Assets/Plugins/Sirenix/Assemblies/*.dll" />
+    <Reference Include="$(UnityProjectRoot)/Assets/Plugins/Demigiant/DOTween/DOTween.dll" />
+  </ItemGroup>
+</Project>
+

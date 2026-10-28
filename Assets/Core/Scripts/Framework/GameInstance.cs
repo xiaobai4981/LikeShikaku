@@ -97,7 +97,7 @@ namespace Core
 
         protected virtual void OnApplicationQuit()
         {
-            m_uiManager.Cleanup();
+            m_uiManager?.Cleanup();
             CleanupCurrentScene();
         }
 

@@ -8,6 +8,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/BootScene.unity
     guid: 680bb4803c734fe46875af5a9f350491
+  - enabled: 1
+    path: Assets/_LikeShikaku/Content/MainScene/MainScene.unity
+    guid: ac41ba625a2a01c41921e120c9f62bbc
   m_configObjects:
     com.unity.addressableassets: {fileID: 11400000, guid: e9586dc2fc8c39f489a350f78c040142, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 1629ea793640e3d498c6db3f2c2a2016, type: 3}

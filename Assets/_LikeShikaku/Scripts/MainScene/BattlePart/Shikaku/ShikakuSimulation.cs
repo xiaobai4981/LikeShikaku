@@ -1,145 +1,63 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using UnityEngine;
 
 namespace MainScene.BattlePart.Shikaku
 {
+    /// <summary>只处理输入流程，规则和对局状态由 Model 负责。</summary>
     public class ShikakuSimulation
     {
         private readonly ShikakuModel m_model;
-
-        private readonly bool m_requireSquare;
-        private readonly float m_errorDuration;
-
-        public ShikakuSimulation(ShikakuModel model, bool requireSquare = false, 
-            int minArea = 2, float errorDuration = 0.4f)
+        public ShikakuSimulation(ShikakuModel model, bool requireSquare = false, int minArea = 1, float errorDuration = .6f)
         {
-            m_model = model;
-
-            m_requireSquare = requireSquare;
-            m_errorDuration = Mathf.Max(0f, errorDuration);
+            m_model = model ?? throw new ArgumentNullException(nameof(model));
+            // 保留旧调用参数，实际形状和面积限制由关卡配置决定。
+            // 基础规则允许长方形和正方形。
+            m_model.ErrorDuration = Math.Max(0, errorDuration);
         }
 
         public void Tick(ShikakuInputFrame input, float deltaTime)
         {
             m_model.AdvanceTime(deltaTime);
+            if (m_model.Status != E_ShikakuPlayStatus.Playing)
+            {
+                m_model.CancelSelection();
+                return;
+            }
 
-            // 1. 按下：取消已有区域，或者开始框选。
             if (input.PressDown && input.HasCell)
             {
-                BeginSelection(input.CellPosition);
+                if (m_model.TryClearRegion(input.CellPosition))
+                {
+                    return;
+                }
+
+                m_model.BeginSelection(input.CellPosition);
             }
 
-            // 取消已有区域后这里会直接返回，
-            // 所以这次拖动和松开不会重新提交矩形。
             if (!m_model.IsSelecting)
+            {
                 return;
+            }
 
-            // 2. 按住或松开：更新矩形终点。
             if ((input.Pressing || input.PressUp) && input.HasCell)
             {
-                UpdateSelection(input.CellPosition);
+                m_model.UpdateSelection(input.CellPosition);
             }
 
-            // 3. 松开：提交矩形。
-            if (input.PressUp)
+            if (!input.PressUp)
             {
-                ConfirmSelection();
+                return;
             }
-        }
 
-        private void BeginSelection(Vector2Int pos)
-        {
-            if (!m_model.IsValidCell(pos))
-                return;
-
-            // 点击已完成区域：取消整个区域。
-            if (m_model.TryClearRegion(pos))
-                return;
-
-            // 点击普通格子：开始框选。
-            m_model.BeginSelection(pos);
-        }
-
-        private void UpdateSelection(Vector2Int pos)
-        {
-            if (!m_model.IsSelecting)
-                return;
-
-            if (!m_model.IsValidCell(pos))
-                return;
-
-            m_model.UpdateSelection(pos);
-        }
-
-        private void ConfirmSelection()
-        {
-            Vector2Int start = m_model.StartCell;
-            Vector2Int end = m_model.EndCell;
-
-            int minRow = Mathf.Min(start.x, end.x);
-            int maxRow = Mathf.Max(start.x, end.x);
-
-            int minCol = Mathf.Min(start.y, end.y);
-            int maxCol = Mathf.Max(start.y, end.y);
-
-            int width = maxCol - minCol + 1;
-            int height = maxRow - minRow + 1;
-
-            E_ShikakuSelectResult result = Validate(
-                minRow,
-                maxRow,
-                minCol,
-                maxCol,
-                width,
-                height);
-
-            if (result == E_ShikakuSelectResult.Success)
+            // 棋盘外松手只取消，不使用最后一个有效终点提交。
+            if (!input.HasCell)
             {
-                m_model.CompleteRegion(
-                    minRow,
-                    maxRow,
-                    minCol,
-                    maxCol);
-
-                m_model.FinishSelection();
-
-                m_model.SetResult(
-                    E_ShikakuSelectResult.Success);
-            }
-            else
-            {
-                m_model.ShowError(result, m_errorDuration);
-                m_model.FinishSelection();
-            }
-        }
-
-        private E_ShikakuSelectResult Validate(
-            int minRow,
-            int maxRow,
-            int minCol,
-            int maxCol,
-            int width,
-            int height)
-        {
-            if (m_requireSquare && width != height)
-                return E_ShikakuSelectResult.NotSquare;
-
-            for (int row = minRow; row <= maxRow; row++)
-            {
-                for (int col = minCol; col <= maxCol; col++)
-                {
-                    if (m_model.IsCompleted(row, col))
-                    {
-                        return E_ShikakuSelectResult.Overlap;
-                    }
-                }
+                CancelSelection();
+                return;
             }
 
-            // 后续数字约束、禁止区域、预设边界等规则，
-            // 可以继续添加在这里。
-
-            return E_ShikakuSelectResult.Success;
+            m_model.CompleteRegion(Math.Min(m_model.StartCell.x, m_model.EndCell.x), Math.Max(m_model.StartCell.x, m_model.EndCell.x), Math.Min(m_model.StartCell.y, m_model.EndCell.y), Math.Max(m_model.StartCell.y, m_model.EndCell.y));
+            m_model.FinishSelection();
         }
 
         public void CancelSelection()

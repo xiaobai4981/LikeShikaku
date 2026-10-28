@@ -1,193 +1,306 @@
-using System.Collections;
+using System;
 using System.Collections.Generic;
-using UnityEngine;
 
 namespace MainScene.BattlePart.Shikaku
 {
-    public class ShikakuModel
+    [Serializable]
+    public class ShikakuSnapshot
     {
-        // 基础数据
-        public int RowCount { get; }
-        public int ColCount { get; }
-        private readonly int[,] m_regionIds;
-        private int m_nextRegionId = 1;
+        public List<ShikakuRect> regions = new List<ShikakuRect>();
+    }
 
-        // 运行时数据
-        public bool IsSelecting { get; private set; }
-        public Vector2Int StartCell { get; private set; }
-        public Vector2Int EndCell { get; private set; }
-        private Vector2Int m_errorStart;
-        private Vector2Int m_errorEnd;
-        private float m_errorRemainTime;
+    [Serializable]
+    public class ShikakuResume
+    {
+        public string levelId;
+        public string fingerprint;
+        public int errors;
+        public int hintsUsed;
+        public int lessonIndex;
+        public List<ShikakuRect> regions = new List<ShikakuRect>();
+        public List<ShikakuSnapshot> history = new List<ShikakuSnapshot>();
+    }
 
-        // 每次操作结果
-        public E_ShikakuSelectResult LastResult { get; private set; }
-        public int ResultVersion { get; private set; }
+    public sealed partial class ShikakuModel
+    {
+        public ShikakuLevelData Level { get; }
 
-        public ShikakuModel(int rows, int cols)
+        private readonly List<ShikakuRect> m_regions = new List<ShikakuRect>();
+        private readonly List<ShikakuSnapshot> m_history = new List<ShikakuSnapshot>();
+        private readonly IReadOnlyList<ShikakuRect> m_readOnlyRegions;
+        public IReadOnlyList<ShikakuRect> Regions => m_readOnlyRegions;
+        public int Errors { get; private set; }
+        public int HintsUsed { get; private set; }
+        public int LessonIndex { get; private set; }
+        public int Revision { get; private set; }
+        public E_ShikakuPlayStatus Status { get; private set; } = E_ShikakuPlayStatus.Playing;
+        public bool InLesson => LessonIndex < Level.lessons.Count;
+        public TutorialStep CurrentLesson => InLesson ? Level.lessons[LessonIndex] : null;
+        public bool CanUndo => Status == E_ShikakuPlayStatus.Playing && m_history.Count > 0;
+
+        public int CoveredArea
         {
-            RowCount = rows;
-            ColCount = cols;
-
-            m_regionIds = new int[rows, cols];
-
-            IsSelecting = false;
-            LastResult = E_ShikakuSelectResult.None;
-            ResultVersion = 0;
-        }
-
-        public bool IsValidCell(Vector2Int pos)
-        {
-            return pos.x >= 0 && pos.x < RowCount &&
-                   pos.y >= 0 && pos.y < ColCount;
-        }
-
-        public bool IsCompleted(int row, int col)
-        {
-            return m_regionIds[row, col] != 0;
-        }
-
-        public int GetRegionId(int row, int col)
-        {
-            return m_regionIds[row, col];
-        }
-
-        public void BeginSelection(Vector2Int pos)
-        {
-            IsSelecting = true;
-            StartCell = pos;
-            EndCell = pos;
-
-            m_errorRemainTime = 0f;
-
-            SetResult(E_ShikakuSelectResult.None);
-        }
-
-        public void UpdateSelection(Vector2Int pos)
-        {
-            if (!IsSelecting)
-                return;
-
-            EndCell = pos;
-        }
-
-        public void FinishSelection()
-        {
-            IsSelecting = false;
-        }
-
-        public void CancelSelection()
-        {
-            IsSelecting = false;
-            m_errorRemainTime = 0f;
-
-            SetResult(E_ShikakuSelectResult.None);
-        }
-
-        /// <summary>
-        /// 将整个矩形记录为一个已完成区域。
-        /// </summary>
-        public void CompleteRegion(int minRow, int maxRow, int minCol, int maxCol)
-        {
-            int regionId = m_nextRegionId++;
-
-            for (int row = minRow; row <= maxRow; row++)
+            get
             {
-                for (int col = minCol; col <= maxCol; col++)
+                int n = 0;
+                foreach (var r in m_regions)
                 {
-                    m_regionIds[row, col] = regionId;
+                    n += r.Area;
                 }
+
+                return n;
             }
         }
 
-        /// <summary>
-        /// 点击已完成区域中的任意格子，取消整个区域。
-        /// </summary>
-        public bool TryClearRegion(Vector2Int pos)
+        public int Stars => Status != E_ShikakuPlayStatus.Won ? 0 : Errors == 0 && HintsUsed == 0 ? 3 : Errors <= 1 ? 2 : 1;
+
+        public ShikakuModel(ShikakuLevelData level)
         {
-            if (!IsValidCell(pos))
-                return false;
-
-            int regionId = m_regionIds[pos.x, pos.y];
-
-            if (regionId == 0)
-                return false;
-
-            for (int row = 0; row < RowCount; row++)
+            var problems = level.Inspect();
+            if (problems.Count > 0)
             {
-                for (int col = 0; col < ColCount; col++)
+                throw new ArgumentException(string.Join("\n", problems));
+            }
+
+            Level = level;
+            m_readOnlyRegions = m_regions.AsReadOnly();
+        }
+
+        public int RegionAt(GridCell cell)
+        {
+            return m_regions.FindIndex(x => x.Contains(cell));
+        }
+
+        public ShikakuRuleResult Submit(ShikakuRect rect)
+        {
+            if (Status != E_ShikakuPlayStatus.Playing)
+            {
+                return ShikakuRuleResult.Error(E_ShikakuRuleFailure.SessionClosed, "当前不能布阵。");
+            }
+
+            var result = ShikakuRules.Validate(Level, rect, m_regions);
+            if (!result.IsValid)
+            {
+                bool teaching = InLesson;
+                AdvanceLesson(E_TutorialAction.InvalidSubmission, rect, result.failure);
+                if (!teaching && Level.maximumErrors > 0)
                 {
-                    if (m_regionIds[row, col] == regionId)
+                    Errors++;
+                    if (Errors >= Level.maximumErrors)
                     {
-                        m_regionIds[row, col] = 0;
+                        Status = E_ShikakuPlayStatus.Lost;
                     }
                 }
+
+                PresentFeedback(rect, result);
+                return result;
             }
 
-            // 本次操作只取消区域，不启动新的框选。
-            IsSelecting = false;
-            m_errorRemainTime = 0f;
+            Remember();
+            m_regions.Add(rect);
+            Revision++;
+            AdvanceLesson(E_TutorialAction.Deploy, rect, E_ShikakuRuleFailure.None);
+            CheckWin();
+            SetNotice(Level.requireArcherSupport && Status != E_ShikakuPlayStatus.Won
+                ? (CoveredArea == Level.AvailableArea ? "全盘已覆盖，仍有弓阵缺少护卫；点击军阵撤回调整，不扣错。" : "部队就位，可继续部署护卫。") + "\n" + ShikakuRules.FormationProgress(Level, m_regions)
+                : result.message, E_ShikakuSelectResult.Success);
+            return result;
+        }
 
-            SetResult(E_ShikakuSelectResult.RegionCleared);
+        public bool RemoveAt(GridCell cell)
+        {
+            if (Status != E_ShikakuPlayStatus.Playing)
+            {
+                return false;
+            }
 
+            int index = RegionAt(cell);
+            if (index < 0)
+            {
+                return false;
+            }
+
+            Remember();
+            var rect = m_regions[index];
+            m_regions.RemoveAt(index);
+            Revision++;
+            AdvanceLesson(E_TutorialAction.Remove, rect, E_ShikakuRuleFailure.None);
+            CheckWin();
+            CancelSelection();
+            SetNotice("已撤回整支部队，不扣次数。", E_ShikakuSelectResult.RegionCleared);
             return true;
         }
 
-        public void ShowError(E_ShikakuSelectResult result, float duration)
+        private void Remember()
         {
-            m_errorStart = StartCell;
-            m_errorEnd = EndCell;
-
-            m_errorRemainTime = Mathf.Max(0f, duration);
-
-            SetResult(result);
+            m_history.Add(new ShikakuSnapshot { regions = new List<ShikakuRect>(m_regions) });
+            if (m_history.Count > 100)
+            {
+                m_history.RemoveAt(0);
+            }
         }
 
-        public void SetResult(E_ShikakuSelectResult result)
+        public bool Undo()
         {
-            LastResult = result;
-            ResultVersion++;
+            if (!CanUndo)
+            {
+                return false;
+            }
+
+            var old = m_history[m_history.Count - 1];
+            m_history.RemoveAt(m_history.Count - 1);
+            m_regions.Clear();
+            m_regions.AddRange(old.regions);
+            Revision++;
+            // 撤销仅恢复布局，不返还容错、提示或已完成教学。
+            CheckWin();
+            CancelSelection();
+            SetNotice("已撤销上一步，错误与提示次数不回退。", E_ShikakuSelectResult.Undo);
+            return true;
         }
 
-        public void AdvanceTime(float deltaTime)
+        private void AdvanceLesson(E_TutorialAction action, ShikakuRect rect, E_ShikakuRuleFailure failure)
         {
-            if (m_errorRemainTime <= 0f)
+            var step = CurrentLesson;
+            if (step == null || step.action != action || (step.hasTarget && !rect.Contains(step.target)) || (action == E_TutorialAction.InvalidSubmission && step.expectedFailure != E_ShikakuRuleFailure.None && step.expectedFailure != failure))
+            {
                 return;
-
-            m_errorRemainTime = Mathf.Max(0f, m_errorRemainTime - Mathf.Max(0f, deltaTime));
-        }
-
-        public E_ShikakuCellStatus GetCellStatus(int row, int col)
-        {
-            // 错误反馈优先。
-            if (m_errorRemainTime > 0f && IsInsideRectangle(m_errorStart, m_errorEnd, row, col))
-            {
-                return E_ShikakuCellStatus.Error;
             }
 
-            // 当前框选预览。
-            if (IsSelecting && IsInsideRectangle(StartCell, EndCell, row, col))
+            LessonIndex++;
+            SkipAlreadySatisfiedDeploySteps();
+        }
+
+        private void SkipAlreadySatisfiedDeploySteps()
+        {
+            while (InLesson && CurrentLesson.action == E_TutorialAction.Deploy && m_regions.Exists(r => !CurrentLesson.hasTarget || r.Contains(CurrentLesson.target)))
             {
-                return IsCompleted(row, col)
-                    ? E_ShikakuCellStatus.Error
-                    : E_ShikakuCellStatus.Preview;
+                LessonIndex++;
+            }
+        }
+
+        public void SkipLesson()
+        {
+            LessonIndex = Level.lessons.Count;
+            CheckWin();
+            SetNotice("已结束本关教学。");
+        }
+
+        public void Pause(bool paused)
+        {
+            if (Status == E_ShikakuPlayStatus.Playing && paused)
+            {
+                Status = E_ShikakuPlayStatus.Paused;
+                CancelSelection();
+                SetNotice("已暂停。");
+            }
+            else if (Status == E_ShikakuPlayStatus.Paused && !paused)
+            {
+                Status = E_ShikakuPlayStatus.Playing;
+                SetNotice("继续布阵。");
+            }
+        }
+
+        public void UseHint()
+        {
+            if (Status == E_ShikakuPlayStatus.Playing)
+            {
+                HintsUsed++;
+                SetResult(E_ShikakuSelectResult.Hint);
+            }
+        }
+
+        private void CheckWin()
+        {
+            if (CoveredArea != Level.AvailableArea || !ShikakuRules.FormationSatisfied(Level, m_regions))
+            {
+                return;
             }
 
-            return IsCompleted(row, col)
-                ? E_ShikakuCellStatus.Success
-                : E_ShikakuCellStatus.Normal;
+            // 棋盘合法完成后直接通关，不让可选教学阻碍结算。
+            LessonIndex = Level.lessons.Count;
+            Status = E_ShikakuPlayStatus.Won;
         }
 
-        private static bool IsInsideRectangle(Vector2Int start, Vector2Int end, int row, int col)
+        public ShikakuResume Capture()
         {
-            int minRow = Mathf.Min(start.x, end.x);
-            int maxRow = Mathf.Max(start.x, end.x);
+            var copy = new List<ShikakuSnapshot>();
+            foreach (var h in m_history)
+            {
+                copy.Add(new ShikakuSnapshot { regions = new List<ShikakuRect>(h.regions) });
+            }
 
-            int minCol = Mathf.Min(start.y, end.y);
-            int maxCol = Mathf.Max(start.y, end.y);
-
-            return row >= minRow && row <= maxRow && col >= minCol && col <= maxCol;
+            return new ShikakuResume
+            {
+                levelId = Level.id,
+                fingerprint = Level.Fingerprint(),
+                errors = Errors,
+                hintsUsed = HintsUsed,
+                lessonIndex = LessonIndex,
+                regions = new List<ShikakuRect>(m_regions),
+                history = copy
+            };
         }
 
+        public bool Restore(ShikakuResume data)
+        {
+            if (data == null || data.levelId != Level.id || data.fingerprint != Level.Fingerprint() || data.errors < 0 || (Level.maximumErrors == 0 && data.errors != 0) || (Level.maximumErrors > 0 && data.errors > Level.maximumErrors) || data.hintsUsed < 0 || data.lessonIndex < 0 || data.lessonIndex > Level.lessons.Count || !ValidRegions(data.regions))
+            {
+                return false;
+            }
+
+            // 先验证再修改当前数据；损坏的历史单独丢弃。
+            m_regions.Clear();
+            m_regions.AddRange(data.regions);
+            m_history.Clear();
+            if (data.history != null && data.history.Count <= 100)
+            {
+                foreach (var h in data.history)
+                {
+                    if (h == null || !ValidRegions(h.regions))
+                    {
+                        m_history.Clear();
+                        break;
+                    }
+
+                    m_history.Add(new ShikakuSnapshot { regions = new List<ShikakuRect>(h.regions) });
+                }
+            }
+
+            Errors = data.errors;
+            HintsUsed = data.hintsUsed;
+            LessonIndex = data.lessonIndex;
+            Status = Level.maximumErrors > 0 && Errors >= Level.maximumErrors ? E_ShikakuPlayStatus.Lost : E_ShikakuPlayStatus.Playing;
+            if (Status == E_ShikakuPlayStatus.Playing)
+            {
+                CheckWin();
+            }
+
+            Revision++;
+            CancelSelection();
+            SetNotice("已恢复上次布阵。");
+            return true;
+        }
+
+        private bool ValidRegions(List<ShikakuRect> list)
+        {
+            if (list == null || list.Count > Level.clues.Count)
+            {
+                return false;
+            }
+
+            var accepted = new List<ShikakuRect>();
+            foreach (var r in list)
+            {
+                if (!ShikakuRules.Validate(Level, r, accepted).IsValid)
+                {
+                    return false;
+                }
+
+                accepted.Add(r);
+            }
+
+            return true;
+        }
     }
 }

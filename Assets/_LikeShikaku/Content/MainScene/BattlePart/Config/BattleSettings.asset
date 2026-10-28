@@ -16,3 +16,23 @@ MonoBehaviour:
   blocks:
   - blockType: 0
     blockPrefab: {fileID: 6307337590519486529, guid: a27617287060a2140ac62f2172e230b9, type: 3}
+  groundSprite: {fileID: 21300000, guid: 7b0d042f28db3cd4a87996ca2412a338, type: 3}
+  blockedSprite: {fileID: 21300000, guid: 51ceadd8255ea664697fce9711221104, type: 3}
+  infantrySprite: {fileID: 21300000, guid: 1614d03209ad0a64bbba09fe3514837f, type: 3}
+  spearmanSprite: {fileID: 21300000, guid: 915099248f35904469796d1e3e487255, type: 3}
+  archerSprite: {fileID: 21300000, guid: 536c9d9cb638ce940accc43faaf0c8f2, type: 3}
+  cavalrySprite: {fileID: 21300000, guid: 5ba4de7e8875acd4f96f1e2c09444725, type: 3}
+  infantryFlag: {fileID: 21300000, guid: 0df3197d5fb04ed44b6f6c64674a221c, type: 3}
+  spearmanFlag: {fileID: 21300000, guid: 4e4a226e79da7cd4a8684e046fdd5e0d, type: 3}
+  archerFlag: {fileID: 21300000, guid: 8e8a918c178f88a4598583f1c922611b, type: 3}
+  cavalryFlag: {fileID: 21300000, guid: 2975bfb039763144982317369da8f14f, type: 3}
+  boardFont: {fileID: 11400000, guid: e382a021a1c85664a9b7a2fd88244ae9, type: 2}
+  hudFont: {fileID: 12800000, guid: 913c64974f3f44f458e0eac852885f5e, type: 3}
+  backgroundSprite: {fileID: 21300000, guid: f55a1f493bf3ffb448545e3453fbaddf, type: 3}
+  advisorPortrait: {fileID: 21300000, guid: 659475188d846d349b9f1dc3e391bd95, type: 3}
+  advisorVictory: {fileID: 21300000, guid: d4ae5c43f9415234c864f64e7ad06028, type: 3}
+  AutoFitCamera: 1
+  BoardViewportHeight: 0.64
+  CameraPadding: 1.2
+  CellGapPercent: 6
+  ShowFallbackHUD: 1
