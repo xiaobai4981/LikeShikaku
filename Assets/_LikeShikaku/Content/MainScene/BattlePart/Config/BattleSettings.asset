@@ -17,7 +17,6 @@ MonoBehaviour:
   - blockType: 0
     blockPrefab: {fileID: 6307337590519486529, guid: a27617287060a2140ac62f2172e230b9, type: 3}
   groundSprite: {fileID: 21300000, guid: 7b0d042f28db3cd4a87996ca2412a338, type: 3}
-  blockedSprite: {fileID: 21300000, guid: 51ceadd8255ea664697fce9711221104, type: 3}
   infantrySprite: {fileID: 21300000, guid: 1614d03209ad0a64bbba09fe3514837f, type: 3}
   spearmanSprite: {fileID: 21300000, guid: 915099248f35904469796d1e3e487255, type: 3}
   archerSprite: {fileID: 21300000, guid: 536c9d9cb638ce940accc43faaf0c8f2, type: 3}
